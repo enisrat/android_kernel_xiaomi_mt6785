@@ -286,7 +286,7 @@ static int handle_bdrv_entry(struct bdrv_work_struct *entry)
 
 void teei_notify_bdrv_fn(void)
 {
-	complete(&teei_bdrv_comp);
+	teei_bdrv_fn(0);
 }
 
 int teei_bdrv_fn(void *work)
@@ -312,7 +312,7 @@ int teei_bdrv_fn(void *work)
 		}
 	}
 
-	return 0;
+	return retVal;
 }
 
 int init_bdrv_comp_fn(void)

@@ -232,9 +232,7 @@ int teei_switch_fn(void *work)
 
 int teei_notify_switch_fn(void)
 {
-	complete(&teei_switch_comp);
-
-	return 0;
+	return teei_switch_fn(0);
 }
 
 int init_teei_switch_comp(void)
