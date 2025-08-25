@@ -533,10 +533,8 @@ struct notifier_block ut_smc_nb;
 static int init_teei_framework(void)
 {
 	long retVal = 0;
-	struct tz_log_state *s = dev_get_platdata(
-				&tz_drv_state->tz_log_pdev->dev);
 
-	phys_addr_t tz_log_buf_pa = page_to_phys(s->log_pages);
+	phys_addr_t tz_log_buf_pa = page_to_phys(TZ_LOG_PAGES);
 
 	boot_soter_flag = START_STATUS;
 
