@@ -530,11 +530,11 @@ long teei_service_init_second(void)
 
 struct notifier_block ut_smc_nb;
 
-static int init_teei_framework(void)
+int init_teei_framework(void)
 {
 	long retVal = 0;
 
-	phys_addr_t tz_log_buf_pa = page_to_phys(TZ_LOG_PAGES);
+	phys_addr_t tz_log_buf_pa = TZ_LOG_PAGES;
 
 	boot_soter_flag = START_STATUS;
 
@@ -867,7 +867,7 @@ return_fn:
  *			0: on success
  */
 
-static int teei_client_open(struct inode *inode, struct file *file)
+int teei_client_open(struct inode *inode, struct file *file)
 {
 	return 0;
 }
@@ -993,7 +993,7 @@ static struct platform_driver teei_driver = {
  * initialize service framework
  * @return
  */
-static int teei_client_init(void)
+int teei_client_init(void)
 {
 	int ret_code = 0;
 	struct device *class_dev = NULL;
@@ -1090,7 +1090,7 @@ static int teei_client_init(void)
 #ifndef CONFIG_MICROTRUST_DYNAMIC_CORE
 	teei_cpus_write_lock();
 #ifdef TEEI_SWITCH_BIG_CORE
-	if (cpu_online(TZ_PREFER_BIND_CORE)) {
+	if (0) {
 		current_cpu_id = TZ_PREFER_BIND_CORE;
 		teei_move_cpu_context(current_cpu_id, 0);
 	}

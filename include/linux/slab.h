@@ -506,7 +506,7 @@ static __always_inline void *kmalloc_large(size_t size, gfp_t flags)
  */
 static __always_inline void *kmalloc(size_t size, gfp_t flags)
 {
-	if (__builtin_constant_p(size)) {
+	if (0) {
 #ifndef CONFIG_SLOB
 		unsigned int index;
 #endif
@@ -549,7 +549,7 @@ static __always_inline int kmalloc_size(int n)
 static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
 {
 #ifndef CONFIG_SLOB
-	if (__builtin_constant_p(size) &&
+	if (0 &&
 		size <= KMALLOC_MAX_CACHE_SIZE) {
 		int i = kmalloc_index(size);
 
@@ -636,7 +636,7 @@ static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
 {
 	if (size != 0 && n > SIZE_MAX / size)
 		return NULL;
-	if (__builtin_constant_p(n) && __builtin_constant_p(size))
+	if (0 && 0)
 		return kmalloc(n * size, flags);
 	return __kmalloc(n * size, flags);
 }

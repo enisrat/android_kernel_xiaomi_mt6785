@@ -25,12 +25,11 @@
 -Werror-implicit-function-declaration \
 -Wno-format-security \
 -std=gnu89 \
--fno-PIE \
+-fPIE \
 -mgeneral-regs-only \
 -DCONFIG_AS_LSE=1 \
 -fno-asynchronous-unwind-tables \
 -mpc-relative-literal-loads \
--fno-pic \
 -mabi=lp64 \
 -DKASAN_SHADOW_SCALE_SHIFT=3 \
 -fno-delete-null-pointer-checks \
@@ -40,7 +39,6 @@
 -Wno-int-in-bool-context \
 -O2 \
 --param=allow-store-data-races=0 \
--DCC_HAVE_ASM_GOTO \
 -Wframe-larger-than=1024 \
 -fno-stack-protector \
 -Wno-unused-but-set-variable \
@@ -85,8 +83,9 @@
 -fsanitize=bool \
 -fsanitize=enum \
 -Wno-maybe-uninitialized \
+-DMODULE \
 -DKBUILD_BASENAME='"teei_client_main"' \
 -DKBUILD_MODNAME='"teei"' \
 -c \
 -o drivers/misc/mediatek/teei/400/tz_driver/.tmp_teei_client_main.o \
-drivers/misc/mediatek/teei/400/tz_driver/teei_client_main.c 
+ drivers/misc/mediatek/teei/400/tz_driver/teei_client_main.c \
