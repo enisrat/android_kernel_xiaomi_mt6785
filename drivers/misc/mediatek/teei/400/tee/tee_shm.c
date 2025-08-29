@@ -31,6 +31,11 @@ struct tee_shm_dmabuf_ref {
 	struct sg_table *sgt;
 };
 
+extern char* ISEE_SHM_BASE;
+
+static char *next_alloc = 0;
+static long last_alloc_size = 0;
+
 static void tee_shm_release(struct tee_shm *shm)
 {
 	struct tee_device *teedev = shm->teedev;
@@ -118,81 +123,59 @@ static struct dma_buf_ops tee_shm_dma_buf_ops = {
 
 struct tee_shm *isee_shm_kalloc(struct tee_context *ctx, size_t size, u32 flags)
 {
-	struct tee_device *teedev = ctx->teedev;
 	struct tee_shm_pool_mgr *poolm = NULL;
 	struct tee_shm *shm;
 	void *ret;
 	int rc;
 
-	if (!(flags & TEE_SHM_MAPPED)) {
-		IMSG_ERROR(
-			"only mapped allocations supported\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	if ((flags & ~(TEE_SHM_MAPPED | TEE_SHM_DMA_KERN_BUF))) {
-		IMSG_ERROR("invalid shm flags 0x%x", flags);
-		return ERR_PTR(-EINVAL);
-	}
-
-	if (!isee_device_get(teedev))
-		return ERR_PTR(-EINVAL);
-
-	if (!teedev->pool) {
-		/* teedev has been detached from driver */
-		ret = ERR_PTR(-EINVAL);
-		goto err_dev_put;
-	}
-
 	shm = kzalloc(sizeof(*shm), GFP_KERNEL);
 	if (!shm) {
 		ret = ERR_PTR(-ENOMEM);
-		goto err_dev_put;
+		return ret;
 	}
 
 	shm->flags = flags;
-	shm->teedev = teedev;
+	shm->teedev = 1;
 	shm->ctx = ctx;
-	if (flags & TEE_SHM_DMA_KERN_BUF)
-		poolm = &teedev->pool->dma_buf_mgr;
-	else
-		poolm = &teedev->pool->private_mgr;
 
-	rc = poolm->ops->alloc(poolm, shm, size);
-	if (rc) {
-		ret = ERR_PTR(rc);
-		goto err_kfree;
+	unsigned long va;
+	size_t s = roundup(size, 1 << 12);
+
+	if(!next_alloc) {
+		if(!ISEE_SHM_BASE)
+			IMSG_ERROR("!ISEE_SHM_BASE\n");
+		next_alloc = ISEE_SHM_BASE;
 	}
 
-	mutex_lock(&teedev->mutex);
-	shm->id = idr_alloc(&teedev->idr, shm, 1, 0, GFP_KERNEL);
-	mutex_unlock(&teedev->mutex);
-	if (shm->id < 0) {
-		ret = ERR_PTR(shm->id);
-		goto err_pool_free;
-	}
+	va = next_alloc;
+	next_alloc += s;
+	last_alloc_size = s;
 
-	mutex_lock(&teedev->mutex);
-	list_add_tail(&shm->link, &ctx->list_shm);
-	mutex_unlock(&teedev->mutex);
+	memset((void *)va, 0, s);
+	shm->kaddr = (void *)va;
+	shm->paddr = va;
+	shm->size = s;
 
+	IMSG_INFO("isee_shm_kalloc: %d 0x%x 0x%llx\n", size, flags, va);
+	
 	return shm;
 
-err_pool_free:
-	poolm->ops->free(poolm, shm);
-err_kfree:
-	kfree(shm);
-err_dev_put:
-	isee_device_put(teedev);
-	return ret;
 }
 EXPORT_SYMBOL_GPL(isee_shm_kalloc);
 
 void isee_shm_kfree(struct tee_shm *shm)
 {
-	tee_shm_release(shm);
+	if( (next_alloc-last_alloc_size) == (char*)shm){
+		next_alloc -= last_alloc_size;
+		last_alloc_size = 0;
+	}
+	IMSG_INFO("isee_shm_kfree: 0x%llx 0x%llx\n", shm, next_alloc);
 }
 EXPORT_SYMBOL_GPL(isee_shm_kfree);
+
+long isee_shm_base(void) {
+	return ISEE_SHM_BASE;
+}
 
 /**
  * isee_shm_alloc() - Allocate shared memory
@@ -208,90 +191,7 @@ EXPORT_SYMBOL_GPL(isee_shm_kfree);
  */
 struct tee_shm *isee_shm_alloc(struct tee_context *ctx, size_t size, u32 flags)
 {
-	struct tee_device *teedev = ctx->teedev;
-	struct tee_shm_pool_mgr *poolm = NULL;
-	struct tee_shm *shm;
-	void *ret;
-	int rc;
-
-	if (!(flags & TEE_SHM_MAPPED)) {
-		IMSG_ERROR(
-			"only mapped allocations supported\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	if ((flags & ~(TEE_SHM_MAPPED | TEE_SHM_DMA_BUF))) {
-		IMSG_ERROR("invalid shm flags 0x%x", flags);
-		return ERR_PTR(-EINVAL);
-	}
-
-	if (!isee_device_get(teedev))
-		return ERR_PTR(-EINVAL);
-
-	if (!teedev->pool) {
-		/* teedev has been detached from driver */
-		ret = ERR_PTR(-EINVAL);
-		goto err_dev_put;
-	}
-
-	shm = kzalloc(sizeof(*shm), GFP_KERNEL);
-	if (!shm) {
-		ret = ERR_PTR(-ENOMEM);
-		goto err_dev_put;
-	}
-
-	shm->flags = flags;
-	shm->teedev = teedev;
-	shm->ctx = ctx;
-	if (flags & TEE_SHM_DMA_BUF)
-		poolm = &teedev->pool->dma_buf_mgr;
-	else
-		poolm = &teedev->pool->private_mgr;
-
-	rc = poolm->ops->alloc(poolm, shm, size);
-	if (rc) {
-		ret = ERR_PTR(rc);
-		goto err_kfree;
-	}
-
-	mutex_lock(&teedev->mutex);
-	shm->id = idr_alloc(&teedev->idr, shm, 1, 0, GFP_KERNEL);
-	mutex_unlock(&teedev->mutex);
-	if (shm->id < 0) {
-		ret = ERR_PTR(shm->id);
-		goto err_pool_free;
-	}
-
-	if (flags & TEE_SHM_DMA_BUF) {
-		DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
-
-		exp_info.ops = &tee_shm_dma_buf_ops;
-		exp_info.size = shm->size;
-		exp_info.flags = O_RDWR;
-		exp_info.priv = shm;
-
-		shm->dmabuf = dma_buf_export(&exp_info);
-		if (IS_ERR(shm->dmabuf)) {
-			ret = ERR_CAST(shm->dmabuf);
-			goto err_rem;
-		}
-	}
-	mutex_lock(&teedev->mutex);
-	list_add_tail(&shm->link, &ctx->list_shm);
-	mutex_unlock(&teedev->mutex);
-
-	return shm;
-err_rem:
-	mutex_lock(&teedev->mutex);
-	idr_remove(&teedev->idr, shm->id);
-	mutex_unlock(&teedev->mutex);
-err_pool_free:
-	poolm->ops->free(poolm, shm);
-err_kfree:
-	kfree(shm);
-err_dev_put:
-	isee_device_put(teedev);
-	return ret;
+	return isee_shm_kalloc(ctx, size, flags);
 }
 EXPORT_SYMBOL_GPL(isee_shm_alloc);
 
@@ -319,17 +219,7 @@ int isee_shm_get_fd(struct tee_shm *shm)
  */
 void isee_shm_free(struct tee_shm *shm)
 {
-	/*
-	 * dma_buf_put() decreases the dmabuf reference counter and will
-	 * call tee_shm_release() when the last reference is gone.
-	 *
-	 * In the case of driver private memory we call tee_shm_release
-	 * directly instead as it doesn't have a reference counter.
-	 */
-	if (shm->flags & TEE_SHM_DMA_BUF)
-		dma_buf_put(shm->dmabuf);
-	else
-		tee_shm_release(shm);
+	isee_shm_kfree(shm);
 }
 EXPORT_SYMBOL_GPL(isee_shm_free);
 

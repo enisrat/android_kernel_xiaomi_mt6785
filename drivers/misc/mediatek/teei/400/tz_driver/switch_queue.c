@@ -194,8 +194,10 @@ int teei_switch_fn(void *work)
 		 * Check if the task link is empty
 		 */
 		retVal = is_teei_task_link_empty();
-		if (retVal == 1)
-			continue;
+		if (retVal == 1){
+			IMSG_INFO("TEEI: is_teei_task_link_empty = TRUE\n");
+			break;
+		}
 
 #ifdef CONFIG_MICROTRUST_TZ_LOG
 		teei_notify_log_fn();

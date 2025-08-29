@@ -125,10 +125,12 @@ static int reetime_handle(struct NQ_entry *entry)
 	unsigned long long time_type = 0;
 	int retVal = 0;
 
+	IMSG_INFO("reetime_handle\n");
+
 	time_type = entry->param[0];
 	block_p = entry->block_p;
 
-	if (time_type == GET_UPTIME) {
+	if (1) {
 		get_monotonic_boottime(&tp);
 		tv_sec = tp.tv_sec;
 		tv_usec = tp.tv_nsec/1000;
@@ -302,7 +304,7 @@ int teei_bdrv_fn(void *work)
 		bdrv_entry = teei_get_bdrv_from_link();
 		if (bdrv_entry == NULL) {
 			IMSG_ERROR("TEEI: Can NOT get the bdrv entry!\n");
-			continue;
+			break;
 		}
 
 		retVal = handle_bdrv_entry(bdrv_entry);

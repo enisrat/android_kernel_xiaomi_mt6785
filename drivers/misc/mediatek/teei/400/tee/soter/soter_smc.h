@@ -20,6 +20,8 @@
 /* Let's reuse optee's message format */
 #include "optee_msg.h"
 
+#include <imsg_log.h>
+
 enum {
 	NQ_CMD_CLIENT_API_REQUEST,
 	NQ_CMD_GPTEE_CLIENT_API_REQUEST,

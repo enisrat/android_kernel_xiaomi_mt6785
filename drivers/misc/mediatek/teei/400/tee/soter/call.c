@@ -34,6 +34,20 @@ struct timeval start_val;
 struct timeval end_val;
 #endif
 
+static struct tee_context fakectx = {0};
+static struct soter_context_data fakedata = {0};
+
+struct tee_context * soter_fake_ctx(const char *hostname) {
+	if( !fakectx.teedev ){
+		fakectx.teedev = (void*)&fakectx;
+		INIT_LIST_HEAD(&fakectx.list_shm);
+		INIT_LIST_HEAD(&fakedata.sess_list);
+		fakectx.data = (void*)&fakedata;
+	}
+	memcpy(fakectx.hostname, hostname, strlen(hostname) + 1);
+	return &fakectx;
+}
+
 static struct tee_shm *get_msg_arg(struct tee_context *ctx, size_t num_params,
 				   struct optee_msg_arg **msg_arg,
 				   phys_addr_t *msg_parg)
@@ -271,10 +285,12 @@ int soter_open_session(struct tee_context *ctx,
 		goto out;
 	}
 
+	IMSG_INFO("OPTEE_MSG_CMD_OPEN_SESSION\n");
 	if (soter_do_call_with_arg(ctx, msg_parg)) {
 		msg_arg->ret = TEEC_ERROR_COMMUNICATION;
 		msg_arg->ret_origin = TEEC_ORIGIN_COMMS;
 	}
+	IMSG_INFO("OPTEE_MSG_CMD_OPEN_SESSION ret: %d %d\n", msg_arg->ret, msg_arg->session);
 
 	if (msg_arg->ret == TEEC_SUCCESS) {
 		/* A new session has been created, add it to the list. */
@@ -386,10 +402,12 @@ int soter_invoke_func(struct tee_context *ctx, struct tee_ioctl_invoke_arg *arg,
 	}
 #endif
 
+	IMSG_INFO("OPTEE_MSG_CMD_INVOKE_COMMAND: %d %d\n", msg_arg->func, msg_arg->session);
 	if (soter_do_call_with_arg(ctx, msg_parg)) {
 		msg_arg->ret = TEEC_ERROR_COMMUNICATION;
 		msg_arg->ret_origin = TEEC_ORIGIN_COMMS;
 	}
+	IMSG_INFO("OPTEE_MSG_CMD_INVOKE_COMMAND RET: %d %d\n", msg_arg->ret, msg_arg->ret_origin);
 
 #ifdef CONFIG_MICROTRUST_TZDRIVER_DYNAMICAL_DEBUG
 	if (tzdriver_dynamical_debug_flag == 1) {

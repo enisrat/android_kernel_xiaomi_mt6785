@@ -44,6 +44,8 @@ static struct reserved_mem *reserved_mem;
 static atomic_t is_shm_pool_available = ATOMIC_INIT(0);
 static DECLARE_COMPLETION(shm_pool_registered);
 
+char* ISEE_SHM_BASE; // reserved mem base
+
 int teei_new_capi_init(void)
 {
 	if (reserved_mem) {
@@ -262,6 +264,8 @@ soter_config_shm_memremap(void **memremaped_shm)
 	dmabuf_info.paddr = paddr + SOTER_SHM_NUM_PRIV_PAGES * PAGE_SIZE;
 	dmabuf_info.size = size - SOTER_SHM_NUM_PRIV_PAGES * PAGE_SIZE;
 
+	ISEE_SHM_BASE = paddr;
+	
 	pool = isee_shm_pool_alloc_res_mem(&priv_info, &dmabuf_info);
 	if (IS_ERR(pool)) {
 #ifndef TEEI_DTS_RESERVED_MEM
@@ -289,7 +293,7 @@ static void soter_remove(struct soter_priv *soter)
 	kfree(soter);
 }
 
-static int __init soter_driver_init(void)
+int __init soter_driver_init(void)
 {
 	struct tee_shm_pool *pool = NULL;
 	struct tee_device *teedev = NULL;

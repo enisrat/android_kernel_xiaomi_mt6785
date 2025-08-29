@@ -47,6 +47,23 @@
 #define SMC_CALL_INTERRUPTED_IRQ	0x54
 #define SMC_CALL_DONE			0x45
 
+static inline const char* smc_call_to_string(uint32_t code) {
+    switch (code) {
+        case SMC_CALL_RTC_OK:
+            return "RTC_OK";
+        case SMC_CALL_RTC_UNKNOWN_FUN:
+            return "RTC_UNKNOWN_FUN";
+        case SMC_CALL_RTC_MONITOR_NOT_READY:
+            return "RTC_MONITOR_NOT_READY";
+        case SMC_CALL_INTERRUPTED_IRQ:
+            return "INTERRUPTED_IRQ";
+        case SMC_CALL_DONE:
+            return "DONE";
+        default:
+            return "UNKNOWN";
+    }
+}
+
 #define N_GET_T_FP_DEVICE_ID     \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, \
 		ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 11)

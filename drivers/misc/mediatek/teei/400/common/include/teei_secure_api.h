@@ -16,6 +16,7 @@
 #define _TEEI_KERN_API_
 
 #include <linux/arm-smccc.h>
+#include <linux/printk.h>
 
 #if defined(__GNUC__) && \
 	defined(__GNUC_MINOR__) && \
@@ -35,10 +36,10 @@ static inline long teei_secure_call(u64 function_id,
 		u64 arg0, u64 arg1, u64 arg2)
 {
 	struct arm_smccc_res res;
-
+	//printk("TEEI_SECURE_CALL: 0x%x ENTRY\n", function_id);
 	arm_smccc_smc(function_id, arg0, arg1, arg2,
-			0, 0, 0, 0, &res);
-
+				  0, 0, 0, 0, &res);
+	//printk("TEEI_SECURE_CALL: 0x%x EXIT ret: 0x%x\n", function_id, res.a0);
 	return res.a0;
 }
 #endif /* _TEEI_KERN_API_ */

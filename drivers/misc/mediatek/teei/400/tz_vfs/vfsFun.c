@@ -79,15 +79,15 @@ int wait_for_vfs_done(void)
 	return 0;
 }
 
-int notify_vfs_handle(void)
-{
-#ifdef VFS_RDWR_SEM
-	up(&VFS_rd_sem);
-#else
-	complete(&VFS_rd_comp);
-#endif
-	return 0;
-}
+// int notify_vfs_handle(void)
+// {
+// #ifdef VFS_RDWR_SEM
+// 	up(&VFS_rd_sem);
+// #else
+// 	complete(&VFS_rd_comp);
+// #endif
+// 	return 0;
+// }
 
 
 static int tz_vfs_open(struct inode *inode, struct file *filp)

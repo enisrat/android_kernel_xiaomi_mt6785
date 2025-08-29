@@ -155,34 +155,52 @@ static int nt_switch_irq_handler(void)
 
 	switch (cmd_id) {
 	case TEEI_CREAT_FDRV:
+		IMSG_INFO("Received TEEI_CREAT_FDRV command\n");
+		switch_output_index =
+			((unsigned long)switch_output_index + 1) % 10000;
+		up(&boot_sema);
+		retVal = TEEI_WORK_DONE;
+		break;
 	case TEEI_CREAT_BDRV:
+		IMSG_INFO("Received TEEI_CREAT_BDRV command\n");
+		switch_output_index =
+			((unsigned long)switch_output_index + 1) % 10000;
+		up(&boot_sema);
+		retVal = TEEI_WORK_DONE;
+		break;
 	case TEEI_LOAD_TEE:
+		IMSG_INFO("Received TEEI_LOAD_TEE command\n");
 		switch_output_index =
 			((unsigned long)switch_output_index + 1) % 10000;
 		up(&boot_sema);
 		retVal = TEEI_WORK_DONE;
 		break;
 	case TEEI_FDRV_CALL:
+		IMSG_INFO("Received TEEI_FDRV_CALL command\n");
 		switch_output_index =
 			((unsigned long)switch_output_index + 1) % 10000;
 		teei_handle_fdrv_call(entry);
 		retVal = TEEI_WORK_DONE;
 		break;
 	case NEW_CAPI_CALL:
+		IMSG_INFO("Received NEW_CAPI_CALL command\n");
 		switch_output_index =
 			((unsigned long)switch_output_index + 1) % 10000;
 		teei_handle_capi_call(entry);
 		retVal = TEEI_WORK_DONE;
 		break;
 	case TEEI_BDRV_CALL:
+		IMSG_INFO("Received TEEI_BDRV_CALL command\n");
 		teei_handle_bdrv_call(entry);
 		retVal = TEEI_WORK_DONE;
 		break;
 	case TEEI_SCHED_CALL:
+		IMSG_INFO("Received TEEI_SCHED_CALL command\n");
 		teei_handle_schedule_call(entry);
 		retVal = TEEI_BACK_SW;
 		break;
 	case TEEI_MODIFY_TEE_CONFIG:
+		IMSG_INFO("Received TEEI_MODIFY_TEE_CONFIG command\n");
 		switch_output_index =
 			((unsigned long)switch_output_index + 1) % 10000;
 		teei_handle_config_call(entry);
@@ -218,7 +236,6 @@ static int nt_load_img_handler(void)
 	return TEEI_WORK_DONE;
 }
 
-
 static int ut_smc_handler(void)
 {
 	int irq_id = 0;
@@ -229,26 +246,33 @@ static int ut_smc_handler(void)
 
 	switch (irq_id) {
 	case SCHED_IRQ:
+		IMSG_INFO("Handling SCHED_IRQ\n");
 		retVal = nt_sched_irq_handler();
 		break;
 	case LOAD_IMG_IRQ:
+		IMSG_INFO("Handling LOAD_IMG_IRQ\n");
 		retVal = nt_load_img_handler();
 		break;
 	case SWITCH_IRQ:
+		IMSG_INFO("Handling SWITCH_IRQ\n");
 		retVal = nt_switch_irq_handler();
 		break;
 	case SOTER_ERROR_IRQ:
+		IMSG_INFO("Handling SOTER_ERROR_IRQ\n");
 		retVal = nt_error_irq_handler();
 		break;
 	case BOOT_IRQ:
+		IMSG_INFO("Handling BOOT_IRQ\n");
 		switch_output_index =
 			((unsigned long)switch_output_index + 1) % 10000;
 		retVal = nt_boot_irq_handler();
 		break;
 	default:
-		retVal = TEEI_UNKNOWN_WORK;
 		IMSG_ERROR("get undefine IRQ from secure OS!\n");
+		retVal = TEEI_UNKNOWN_WORK;
 	}
+
+	IMSG_INFO("ut_smc_handler returning with value: %d\n", retVal);
 
 	return retVal;
 }
@@ -261,6 +285,10 @@ int teei_smc(unsigned long long smc_id, unsigned long long p1,
 
 	smc_type = teei_secure_call(smc_id, p1, p2, p3);
 	while (1) {
+		// translate smc_type to string and print:
+		char thestr[128];
+		
+		IMSG_INFO("smc_type: %s\n", smc_call_to_string(smc_type));
 		if (smc_type == SMC_CALL_INTERRUPTED_IRQ)
 			smc_type = teei_secure_call(NT_SCHED_T, 0, 0, 0);
 		else {

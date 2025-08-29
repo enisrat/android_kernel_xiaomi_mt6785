@@ -218,6 +218,8 @@ void isee_shm_kfree(struct tee_shm *shm);
  */
 struct tee_shm *isee_shm_alloc(struct tee_context *ctx, size_t size, u32 flags);
 
+long isee_shm_base(void);
+
 /**
  * isee_shm_free() - Free shared memory
  * @shm:	Handle to shared memory to free
